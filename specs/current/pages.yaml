@@ -9,3 +9,16 @@ pages:
     assertions:
       - condition: "SpecContent.visible == true when file selected"
       - condition: "ValidationBadge.status == 'valid' when schema passes"
+  editor_dashboard:
+    components: [ScenarioList, DiffLogViewer, ScreenshotCompare, AssertionList, CoverageBar, ConfirmPanel]
+    flows:
+      - trigger: ScenarioList.select
+        action: show ScenarioDetail
+      - trigger: ConfirmPanel.confirm
+        action: save baseline
+      - trigger: ConfirmPanel.reject
+        action: save rejection comment
+    assertions:
+      - condition: "ScenarioList.visible == true on load"
+      - condition: "DiffLogViewer.visible == true when scenario selected"
+      - condition: "ConfirmPanel.visible == true when diff exists"

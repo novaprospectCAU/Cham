@@ -574,47 +574,27 @@ pnpm --filter mcp-server dev
 
 ---
 
-## 현재 작업 지시 (Phase 3 시작)
+## 현재 작업 지시 (Phase 4 시작)
 
 > Phase 1 완료: spec-store + mcp-server 뼈대 (5개 MCP 툴)
 > Phase 2 완료: scenario-engine + 3개 MCP 툴 (총 8개)
+> Phase 3 완료: diff-engine + 4개 MCP 툴 (총 12개)
 
-다음 순서로 Phase 3을 구현한다:
+다음 순서로 Phase 4를 구현한다:
 
 ### 결정사항
-- **비교 레이어:** Phase 2 캡처 데이터(DOM tree + rect + screenshot)에 맞춰 4개 레이어 구현
-  - Visual (pixelmatch 픽셀 비교)
-  - Layout (rect 위치/크기 비교)
-  - NodeTree (DOM 트리 구조 비교)
-  - Assertions (assertion 회귀 감지)
-- Style/Event 레이어는 캡처 확장 후 추가
-
-### Baseline 개념
-- `results/baselines/{scenario_id}/` — "정답" 결과
-- `set_baseline(id)` → 현재 latest 결과를 baseline으로 복사
-- `diffScenario(id)` → baseline vs latest 비교
-- baseline 없으면 비교 불가 → 구조화된 에러 반환
+- **플랫폼:** React + Vite 웹앱 (Electron은 나중에 감싸기)
+- **범위:** Diff Log 뷰어 + 스크린샷 비교 + 컨펌/거절 (핵심만)
 
 ### 구현 순서
 
-1. `specs/current/` 업데이트 (Spec First)
-2. `packages/diff-engine/` 구현
-   - `types.ts` — Mismatch, DiffLog, CoverageReport
-   - `visual.ts` — pixelmatch 픽셀 비교
-   - `layout.ts` — rect 위치/크기 비교 (tolerances 적용)
-   - `nodetree.ts` — DOM 트리 구조 diff
-   - `assertions.ts` — assertion 회귀 감지
-   - `reporter.ts` — 불일치 로그 JSON + ai_action 생성
-   - `engine.ts` — DiffEngine 클래스
-3. `packages/mcp-server/` 업데이트
-   - `tools/diff.ts` — 4개 MCP 툴 (set_baseline, get_diff_log, get_latest_diff_log, get_coverage)
-   - `index.ts` — DiffEngine 인스턴스 + 툴 등록
-4. 빌드 + 테스트
+1. `packages/editor-ui/` 세팅 (Vite + React + TypeScript)
+2. Express API 서버 — results/ 읽기 + 스크린샷 서빙
+3. React 컴포넌트 — ScenarioList, DiffLogViewer, ScreenshotCompare, AssertionList, CoverageBar, ConfirmPanel
+4. 빌드 + 브라우저 확인
 
-### Phase 3 완료 기준
-```bash
-mcp__scenario-editor__set_baseline({ scenario_id: "simple_navigation" })
-mcp__scenario-editor__run_scenario({ id: "simple_navigation" })
-mcp__scenario-editor__get_diff_log({ scenario_id: "simple_navigation" })
-mcp__scenario-editor__get_coverage()
-```
+### Phase 4 완료 기준
+- 브라우저에서 시나리오 목록 표시
+- 시나리오 선택 → diff 로그 + 스크린샷 비교 표시
+- 컨펌 → baseline 업데이트
+- 커버리지 바 표시
