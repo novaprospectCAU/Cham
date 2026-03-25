@@ -29,10 +29,21 @@ const AssertionSchema = z.object({
   expected: z.unknown(),
 });
 
+const DockerConfigSchema = z.object({
+  image: z.string(),
+  port: z.number(),
+  container_port: z.number().optional(),
+  env: z.record(z.string()).optional(),
+  volumes: z.array(z.string()).optional(),
+  health_check: z.string().optional(),
+  health_timeout: z.number().optional(),
+});
+
 export const ScenarioDefinitionSchema = z.object({
   name: z.string(),
   description: z.string(),
   target_url: z.string(),
+  docker: DockerConfigSchema.optional(),
   steps: z.array(StepSchema),
   anchors: z.array(AnchorDefinitionSchema).default([]),
   assertions: z.array(AssertionSchema).default([]),

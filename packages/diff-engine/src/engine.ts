@@ -17,6 +17,7 @@ import { generateNodeTreeMismatches } from "./nodetree.js";
 import { generateStyleMismatches } from "./style.js";
 import { generateEventMismatches } from "./events.js";
 import { generateAssertionMismatches } from "./assertions.js";
+import { checkSpecAssertions } from "./specChecker.js";
 import { buildDiffLog, filterBySeverity } from "./reporter.js";
 
 export interface DiffEngineOptions {
@@ -232,6 +233,11 @@ export class DiffEngine {
         actual.assertions,
         "a",
       ),
+    );
+
+    // Layer 7: Spec-based assertions (pages.yaml conditions)
+    allMismatches.push(
+      ...checkSpecAssertions(this.specsDir, actual, "spec"),
     );
 
     const coverage = this.getCoverage();

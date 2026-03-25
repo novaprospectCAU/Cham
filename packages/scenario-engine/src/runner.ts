@@ -6,6 +6,11 @@ import type { Browser, Page } from "playwright";
 import { ScenarioDefinitionSchema } from "./schemas.js";
 import { executeAnchorCaptures, type AnchorContext } from "./anchor.js";
 import { setupEventCollection } from "./capture.js";
+import {
+  isDockerAvailable,
+  startContainer,
+  type DockerContainer,
+} from "./docker.js";
 import type {
   ScenarioDefinition,
   ScenarioEntry,
@@ -131,8 +136,28 @@ export class ScenarioEngine {
     }
 
     let browser: Browser | null = null;
+    let container: DockerContainer | null = null;
 
     try {
+      // Start Docker container if configured
+      if (scenario.docker) {
+        if (!isDockerAvailable()) {
+          throw new Error(JSON.stringify({
+            error: "DOCKER_NOT_AVAILABLE",
+            scenario_id: id,
+          }));
+        }
+        container = await startContainer({
+          image: scenario.docker.image,
+          port: scenario.docker.port,
+          containerPort: scenario.docker.container_port,
+          env: scenario.docker.env,
+          volumes: scenario.docker.volumes,
+          healthCheck: scenario.docker.health_check,
+          healthTimeout: scenario.docker.health_timeout,
+        });
+      }
+
       browser = await chromium.launch({ headless: this.headless });
       const page = await browser.newPage();
 
@@ -232,6 +257,7 @@ export class ScenarioEngine {
       return this.errorResult(id, startedAt, startTime, err);
     } finally {
       if (browser) await browser.close();
+      if (container) await container.stop();
     }
   }
 

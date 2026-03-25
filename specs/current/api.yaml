@@ -91,7 +91,8 @@ api:
         mismatches: array
         ai_action: string
   get_latest_diff_log:
-    input: {}
+    input:
+      scenario_id: string (optional)
     expected:
       status: 200
       response:

@@ -34,10 +34,21 @@ export interface ScenarioAssertion {
   expected: unknown;
 }
 
+export interface DockerConfig {
+  image: string;
+  port: number;
+  container_port?: number;
+  env?: Record<string, string>;
+  volumes?: string[];
+  health_check?: string;
+  health_timeout?: number;
+}
+
 export interface ScenarioDefinition {
   name: string;
   description: string;
   target_url: string;
+  docker?: DockerConfig;
   steps: ScenarioStep[];
   anchors: AnchorDefinition[];
   assertions: ScenarioAssertion[];

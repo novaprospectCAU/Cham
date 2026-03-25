@@ -12,7 +12,14 @@ export {
   executeAnchorCaptures,
   type AnchorContext,
 } from "./anchor.js";
+export {
+  isDockerAvailable,
+  startContainer,
+  pullImage,
+  type DockerContainer,
+} from "./docker.js";
 export type {
+  DockerConfig,
   StepAction,
   CaptureType,
   ScenarioStep,
