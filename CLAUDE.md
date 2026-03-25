@@ -574,27 +574,48 @@ pnpm --filter mcp-server dev
 
 ---
 
-## 현재 작업 지시 (Phase 4 시작)
+## 완료 상태 (Phase 1-5 전체 완료)
 
-> Phase 1 완료: spec-store + mcp-server 뼈대 (5개 MCP 툴)
-> Phase 2 완료: scenario-engine + 3개 MCP 툴 (총 8개)
-> Phase 3 완료: diff-engine + 4개 MCP 툴 (총 12개)
+> Phase 1: spec-store + mcp-server 뼈대 (5개 MCP 툴)
+> Phase 2: scenario-engine + 3개 MCP 툴 (총 8개)
+> Phase 3: diff-engine + 4개 MCP 툴 (총 12개)
+> Phase 4: editor-ui 웹 뷰어 (React + Vite + Express)
+> Phase 5: 자기 검증 루프
 
-다음 순서로 Phase 4를 구현한다:
+---
 
-### 결정사항
-- **플랫폼:** React + Vite 웹앱 (Electron은 나중에 감싸기)
-- **범위:** Diff Log 뷰어 + 스크린샷 비교 + 컨펌/거절 (핵심만)
+## 자기 검증 워크플로우
 
-### 구현 순서
+편집기 코드를 수정한 후 자기 검증을 실행하는 방법:
 
-1. `packages/editor-ui/` 세팅 (Vite + React + TypeScript)
-2. Express API 서버 — results/ 읽기 + 스크린샷 서빙
-3. React 컴포넌트 — ScenarioList, DiffLogViewer, ScreenshotCompare, AssertionList, CoverageBar, ConfirmPanel
-4. 빌드 + 브라우저 확인
+### 자동 (권장)
+```bash
+./scripts/self-verify.sh
+```
 
-### Phase 4 완료 기준
-- 브라우저에서 시나리오 목록 표시
-- 시나리오 선택 → diff 로그 + 스크린샷 비교 표시
-- 컨펌 → baseline 업데이트
-- 커버리지 바 표시
+### 수동 (Claude CLI)
+```bash
+# 1. editor-ui 서버 시작
+pnpm --filter editor-ui dev
+
+# 2. 편집기 자체 시나리오 실행
+mcp__scenario-editor__run_scenario({ id: "editor_scenario_list" })
+mcp__scenario-editor__run_scenario({ id: "editor_diff_viewer" })
+mcp__scenario-editor__run_scenario({ id: "editor_confirm_flow" })
+
+# 3. diff 확인 (baseline이 있는 경우)
+mcp__scenario-editor__get_diff_log({ scenario_id: "editor_scenario_list" })
+
+# 4. 통과하면 baseline 업데이트
+mcp__scenario-editor__set_baseline({ scenario_id: "editor_scenario_list" })
+
+# 5. 커버리지 확인
+mcp__scenario-editor__get_coverage()
+```
+
+### 자기 검증 시나리오
+| 시나리오 | 검증 내용 |
+|---|---|
+| `editor_scenario_list` | UI 로드, 시나리오 목록 렌더링, 선택 동작 |
+| `editor_diff_viewer` | 스크린샷/Diff Log/Assertions 표시 |
+| `editor_confirm_flow` | Confirm/Reject 버튼 표시 |

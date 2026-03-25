@@ -1,0 +1,38 @@
+name: 편집기 Diff 뷰어
+description: 실행 결과가 있는 시나리오를 선택하여 스크린샷, Diff Log, Assertions이 표시되는지 검증한다 (자기 검증)
+target_url: http://localhost:5173
+
+steps:
+  - action: navigate
+    url: http://localhost:5173
+
+  - action: wait
+    ms: 1000
+
+  - action: click
+    selector: "div[style*='cursor: pointer']:last-child"
+    anchor: "SelectWithResult"
+
+  - action: wait
+    ms: 1000
+
+anchors:
+  - name: "SelectWithResult"
+    captures:
+      - offset_ms: 0
+        capture: [dom, screenshot]
+      - offset_ms: 1000
+        capture: [dom, screenshot]
+
+assertions:
+  - anchor: "SelectWithResult"
+    offset_ms: 1000
+    type: selector_visible
+    selector: "h3"
+    expected: true
+
+  - anchor: "SelectWithResult"
+    offset_ms: 1000
+    type: selector_visible
+    selector: "img"
+    expected: true

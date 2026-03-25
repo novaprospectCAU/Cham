@@ -1,0 +1,50 @@
+name: 편집기 시나리오 목록
+description: 편집기 자체 UI에 접속하여 시나리오 목록 렌더링과 선택 동작을 검증한다 (자기 검증)
+target_url: http://localhost:5173
+
+steps:
+  - action: navigate
+    url: http://localhost:5173
+    anchor: "EditorLoad"
+
+  - action: wait
+    ms: 1000
+
+  - action: click
+    selector: "div[style*='cursor: pointer']:nth-child(2)"
+    anchor: "ScenarioSelect"
+
+  - action: wait
+    ms: 500
+
+anchors:
+  - name: "EditorLoad"
+    captures:
+      - offset_ms: 0
+        capture: [dom, screenshot]
+
+  - name: "ScenarioSelect"
+    captures:
+      - offset_ms: 0
+        capture: [dom, screenshot]
+      - offset_ms: 500
+        capture: [dom, screenshot]
+
+assertions:
+  - anchor: "EditorLoad"
+    offset_ms: 0
+    type: selector_visible
+    selector: "h1"
+    expected: true
+
+  - anchor: "EditorLoad"
+    offset_ms: 0
+    type: selector_text
+    selector: "h1"
+    expected: "Scenario Editor"
+
+  - anchor: "EditorLoad"
+    offset_ms: 0
+    type: selector_visible
+    selector: "div[style*='cursor: pointer']"
+    expected: true

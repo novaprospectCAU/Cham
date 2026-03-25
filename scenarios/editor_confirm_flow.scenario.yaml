@@ -1,0 +1,30 @@
+name: 편집기 컨펌 플로우
+description: 시나리오 선택 후 Confirm/Reject 버튼이 표시되는지 검증한다 (자기 검증)
+target_url: http://localhost:5173
+
+steps:
+  - action: navigate
+    url: http://localhost:5173
+
+  - action: wait
+    ms: 1000
+
+  - action: click
+    selector: "div[style*='cursor: pointer']:last-child"
+
+  - action: wait
+    ms: 500
+    anchor: "DetailLoaded"
+
+anchors:
+  - name: "DetailLoaded"
+    captures:
+      - offset_ms: 0
+        capture: [dom, screenshot]
+
+assertions:
+  - anchor: "DetailLoaded"
+    offset_ms: 0
+    type: selector_visible
+    selector: "button"
+    expected: true
