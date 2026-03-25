@@ -14,6 +14,8 @@ import { DEFAULT_TOLERANCES } from "./types.js";
 import { generateVisualMismatches } from "./visual.js";
 import { generateLayoutMismatches } from "./layout.js";
 import { generateNodeTreeMismatches } from "./nodetree.js";
+import { generateStyleMismatches } from "./style.js";
+import { generateEventMismatches } from "./events.js";
 import { generateAssertionMismatches } from "./assertions.js";
 import { buildDiffLog, filterBySeverity } from "./reporter.js";
 
@@ -178,9 +180,52 @@ export class DiffEngine {
           ),
         );
       }
+
+      // Layer 4: Style diff
+      if (expFrame.computed_styles && actFrame.computed_styles) {
+        allMismatches.push(
+          ...generateStyleMismatches(
+            anchor,
+            offsetMs,
+            expFrame.computed_styles,
+            actFrame.computed_styles,
+            tolerances,
+            prefix,
+          ),
+        );
+      }
+
+      // Layer 5: Event diff
+      if (expFrame.event_log && actFrame.event_log) {
+        allMismatches.push(
+          ...generateEventMismatches(
+            anchor,
+            offsetMs,
+            expFrame.event_log,
+            actFrame.event_log,
+            tolerances,
+            prefix,
+          ),
+        );
+      }
+
+      // Performance violation check
+      if (actFrame.performance) {
+        const perfSpecs = this.loadPerformanceSpecs();
+        if (perfSpecs) {
+          const perfMismatches = this.checkPerformanceViolations(
+            anchor,
+            offsetMs,
+            actFrame.performance,
+            perfSpecs,
+            prefix,
+          );
+          allMismatches.push(...perfMismatches);
+        }
+      }
     }
 
-    // Layer 4: Assertion regressions
+    // Layer 6: Assertion regressions
     allMismatches.push(
       ...generateAssertionMismatches(
         expected.assertions,
@@ -344,6 +389,75 @@ export class DiffEngine {
     }
 
     return branches;
+  }
+
+  private loadPerformanceSpecs(): { min_fps?: number; max_memory_mb?: number; max_render_time_ms?: number } | null {
+    const perfPath = path.join(this.specsDir, "performance.yaml");
+    if (!fs.existsSync(perfPath)) return null;
+
+    try {
+      const raw = yaml.load(fs.readFileSync(perfPath, "utf-8")) as {
+        performance?: { min_fps?: number; max_memory_mb?: number; max_render_time_ms?: number };
+      };
+      return raw.performance || null;
+    } catch {
+      return null;
+    }
+  }
+
+  private checkPerformanceViolations(
+    anchor: string,
+    offsetMs: number,
+    metrics: { fps?: number; memory_mb?: number; render_time_ms?: number },
+    specs: { min_fps?: number; max_memory_mb?: number; max_render_time_ms?: number },
+    prefix: string,
+  ): Mismatch[] {
+    const mismatches: Mismatch[] = [];
+    let counter = 0;
+
+    if (specs.min_fps !== undefined && metrics.fps !== undefined && metrics.fps < specs.min_fps) {
+      mismatches.push({
+        id: `${prefix}-perf-${counter++}`,
+        frame_anchor: anchor,
+        frame_offset_ms: offsetMs,
+        layer: "assertion",
+        component: "performance.fps",
+        path: "performance.fps",
+        expected: { min_fps: specs.min_fps },
+        actual: { fps: metrics.fps },
+        severity: metrics.fps < specs.min_fps * 0.8 ? "high" : "medium",
+      });
+    }
+
+    if (specs.max_memory_mb !== undefined && metrics.memory_mb !== undefined && metrics.memory_mb > specs.max_memory_mb) {
+      mismatches.push({
+        id: `${prefix}-perf-${counter++}`,
+        frame_anchor: anchor,
+        frame_offset_ms: offsetMs,
+        layer: "assertion",
+        component: "performance.memory",
+        path: "performance.memory_mb",
+        expected: { max_memory_mb: specs.max_memory_mb },
+        actual: { memory_mb: metrics.memory_mb },
+        severity: metrics.memory_mb > specs.max_memory_mb * 1.5 ? "high" : "medium",
+      });
+    }
+
+    if (specs.max_render_time_ms !== undefined && metrics.render_time_ms !== undefined && metrics.render_time_ms > specs.max_render_time_ms) {
+      mismatches.push({
+        id: `${prefix}-perf-${counter++}`,
+        frame_anchor: anchor,
+        frame_offset_ms: offsetMs,
+        layer: "assertion",
+        component: "performance.render_time",
+        path: "performance.render_time_ms",
+        expected: { max_render_time_ms: specs.max_render_time_ms },
+        actual: { render_time_ms: metrics.render_time_ms },
+        severity: "medium",
+      });
+    }
+
+    return mismatches;
   }
 
   private errorDiffLog(scenarioId: string, errorCode: string): DiffLog {

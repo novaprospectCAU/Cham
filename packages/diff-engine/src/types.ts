@@ -1,4 +1,4 @@
-export type DiffLayer = "visual" | "layout" | "nodetree" | "assertion";
+export type DiffLayer = "visual" | "layout" | "nodetree" | "style" | "event" | "assertion";
 export type Severity = "high" | "medium" | "low";
 
 export interface Mismatch {
@@ -58,13 +58,29 @@ export interface DOMNode {
   rect?: { x: number; y: number; width: number; height: number };
 }
 
+export type StyleMap = Record<string, Record<string, string>>;
+
+export interface BrowserEvent {
+  type: string;
+  target_selector: string;
+  timestamp_ms: number;
+}
+
+export interface PerformanceMetrics {
+  fps?: number;
+  memory_mb?: number;
+  render_time_ms?: number;
+}
+
 export interface FrameCapture {
   timestamp_ms: number;
   anchor: string;
   anchor_offset_ms: number;
   screenshot?: string;
   dom_tree?: DOMNode[];
-  event_log: unknown[];
+  computed_styles?: StyleMap;
+  event_log: BrowserEvent[];
+  performance?: PerformanceMetrics;
 }
 
 export interface AssertionResult {

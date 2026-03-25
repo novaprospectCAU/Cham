@@ -1,6 +1,6 @@
 // --- Scenario Definition (parsed from YAML) ---
 
-export type StepAction = "click" | "type" | "navigate" | "wait";
+export type StepAction = "click" | "type" | "navigate" | "wait" | "scroll";
 export type CaptureType = "dom" | "screenshot";
 
 export interface ScenarioStep {
@@ -10,6 +10,8 @@ export interface ScenarioStep {
   url?: string;
   ms?: number;
   anchor?: string;
+  scroll_y?: number;
+  scroll_x?: number;
 }
 
 export interface AnchorCapture {
@@ -59,13 +61,23 @@ export interface BrowserEvent {
   timestamp_ms: number;
 }
 
+export type StyleMap = Record<string, Record<string, string>>;
+
+export interface PerformanceMetrics {
+  fps?: number;
+  memory_mb?: number;
+  render_time_ms?: number;
+}
+
 export interface FrameCapture {
   timestamp_ms: number;
   anchor: string;
   anchor_offset_ms: number;
   screenshot?: string;
   dom_tree?: DOMNode[];
+  computed_styles?: StyleMap;
   event_log: BrowserEvent[];
+  performance?: PerformanceMetrics;
 }
 
 // --- Assertion Result ---

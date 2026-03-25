@@ -5,6 +5,7 @@ import { chromium } from "playwright";
 import type { Browser, Page } from "playwright";
 import { ScenarioDefinitionSchema } from "./schemas.js";
 import { executeAnchorCaptures, type AnchorContext } from "./anchor.js";
+import { setupEventCollection } from "./capture.js";
 import type {
   ScenarioDefinition,
   ScenarioEntry,
@@ -135,6 +136,9 @@ export class ScenarioEngine {
       browser = await chromium.launch({ headless: this.headless });
       const page = await browser.newPage();
 
+      // Set up event collection
+      let getCollectedEvents: Awaited<ReturnType<typeof setupEventCollection>> | null = null;
+
       const allFrames: FrameCapture[] = [];
 
       // Build anchor lookup
@@ -147,6 +151,10 @@ export class ScenarioEngine {
         switch (step.action) {
           case "navigate":
             await page.goto(step.url!, { waitUntil: "domcontentloaded" });
+            // Set up event collection after first navigation
+            if (!getCollectedEvents) {
+              getCollectedEvents = await setupEventCollection(page);
+            }
             break;
           case "click":
             await page.click(step.selector!);
@@ -156,6 +164,12 @@ export class ScenarioEngine {
             break;
           case "wait":
             await page.waitForTimeout(step.ms!);
+            break;
+          case "scroll":
+            await page.evaluate(
+              ([x, y]) => window.scrollBy(x, y),
+              [step.scroll_x || 0, step.scroll_y || 0],
+            );
             break;
         }
 
@@ -169,6 +183,16 @@ export class ScenarioEngine {
           };
           const frames = await executeAnchorCaptures(page, ctx);
           allFrames.push(...frames);
+        }
+      }
+
+      // Attach collected browser events to all frames
+      if (getCollectedEvents) {
+        const events = await getCollectedEvents();
+        for (const frame of allFrames) {
+          frame.event_log = events.filter(
+            (e) => e.timestamp_ms <= frame.timestamp_ms,
+          );
         }
       }
 

@@ -1,12 +1,14 @@
 import { z } from "zod";
 
 const StepSchema = z.object({
-  action: z.enum(["click", "type", "navigate", "wait"]),
+  action: z.enum(["click", "type", "navigate", "wait", "scroll"]),
   selector: z.string().optional(),
   value: z.string().optional(),
   url: z.string().optional(),
   ms: z.number().optional(),
   anchor: z.string().optional(),
+  scroll_y: z.number().optional(),
+  scroll_x: z.number().optional(),
 });
 
 const AnchorCaptureSchema = z.object({

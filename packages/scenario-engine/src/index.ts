@@ -1,6 +1,13 @@
 export { ScenarioEngine, type ScenarioEngineOptions } from "./runner.js";
 export { ScenarioDefinitionSchema } from "./schemas.js";
-export { captureFrame, captureDom, captureScreenshot } from "./capture.js";
+export {
+  captureFrame,
+  captureDom,
+  captureScreenshot,
+  captureStyles,
+  capturePerformance,
+  setupEventCollection,
+} from "./capture.js";
 export {
   executeAnchorCaptures,
   type AnchorContext,
@@ -16,6 +23,8 @@ export type {
   ScenarioDefinition,
   DOMNode,
   BrowserEvent,
+  StyleMap,
+  PerformanceMetrics,
   FrameCapture,
   AssertionResult,
   ScenarioStatus,

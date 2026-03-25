@@ -5,6 +5,8 @@ export {
 } from "./visual.js";
 export { generateLayoutMismatches } from "./layout.js";
 export { generateNodeTreeMismatches } from "./nodetree.js";
+export { generateStyleMismatches } from "./style.js";
+export { generateEventMismatches } from "./events.js";
 export { generateAssertionMismatches } from "./assertions.js";
 export { buildDiffLog, filterBySeverity } from "./reporter.js";
 export type {
