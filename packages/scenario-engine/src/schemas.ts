@@ -1,0 +1,41 @@
+import { z } from "zod";
+
+const StepSchema = z.object({
+  action: z.enum(["click", "type", "navigate", "wait"]),
+  selector: z.string().optional(),
+  value: z.string().optional(),
+  url: z.string().optional(),
+  ms: z.number().optional(),
+  anchor: z.string().optional(),
+});
+
+const AnchorCaptureSchema = z.object({
+  offset_ms: z.number(),
+  capture: z.array(z.enum(["dom", "screenshot"])),
+});
+
+const AnchorDefinitionSchema = z.object({
+  name: z.string(),
+  captures: z.array(AnchorCaptureSchema),
+});
+
+const AssertionSchema = z.object({
+  anchor: z.string(),
+  offset_ms: z.number(),
+  type: z.enum(["selector_visible", "selector_text", "url_match"]),
+  selector: z.string().optional(),
+  expected: z.unknown(),
+});
+
+export const ScenarioDefinitionSchema = z.object({
+  name: z.string(),
+  description: z.string(),
+  target_url: z.string(),
+  steps: z.array(StepSchema),
+  anchors: z.array(AnchorDefinitionSchema).default([]),
+  assertions: z.array(AssertionSchema).default([]),
+});
+
+export type ScenarioDefinitionParsed = z.infer<
+  typeof ScenarioDefinitionSchema
+>;

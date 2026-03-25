@@ -574,18 +574,64 @@ pnpm --filter mcp-server dev
 
 ---
 
-## 현재 작업 지시 (Phase 1 시작)
+## 현재 작업 지시 (Phase 2 시작)
 
-다음 순서로 Phase 1을 구현한다:
+> Phase 1 완료: spec-store + mcp-server 뼈대 (5개 MCP 툴)
 
-1. `package.json` (root, turborepo monorepo 설정)
-2. `packages/spec-store/` 구현
-   - YAML 파싱 (js-yaml)
-   - 스키마 검증 (zod)
-   - diff 추출 로직
-3. `packages/mcp-server/` 구현
-   - `@anthropic-ai/mcp-sdk` 기반 MCP 서버
-   - `get_current_spec`, `get_spec_diff` 툴 노출
-4. `specs/current/` 샘플 설계서 작성
-   - 편집기 자신의 Phase 1 기능을 명세로 작성
-5. 로컬 Claude CLI 연동 테스트
+다음 순서로 Phase 2를 구현한다:
+
+### 결정사항
+- **앱 실행 방식:** 로컬 URL 기반 (대상 앱이 이미 실행 중이라고 가정, Docker 격리는 이후)
+- **시나리오 범위:** click, type, navigate, wait + screenshot/DOM 캡처 (스크롤/가상화/성능 메트릭은 이후)
+
+### 구현 순서
+
+1. `specs/current/` 업데이트 (Spec First)
+   - `api.yaml`에 `get_scenarios`, `run_scenario`, `get_scenario_result` 추가
+   - `contracts.yaml`에 `scenario_engine → mcp_server` 계약 추가
+2. `packages/scenario-engine/` 구현
+   - `types.ts` — ScenarioDefinition, FrameCapture, ScenarioResult 등 인터페이스
+   - `schemas.ts` — 시나리오 YAML zod 검증
+   - `capture.ts` — DOM 직렬화 (page.evaluate) + 스크린샷 캡처
+   - `anchor.ts` — 이벤트 앵커 기반 캡처 스케줄링
+   - `runner.ts` — ScenarioEngine 클래스 (Playwright 실행)
+3. `packages/mcp-server/` 업데이트
+   - `tools/scenarios.ts` — 3개 MCP 툴 등록
+   - `index.ts` — ScenarioEngine 인스턴스 생성 + 툴 등록
+4. `scenarios/` 샘플 시나리오 작성
+   - `simple_navigation.scenario.yaml` — example.com smoke test
+   - `login_flow.scenario.yaml` — 로그인 시나리오 템플릿
+5. 빌드 + MCP 통합 테스트
+
+### 시나리오 YAML 형식
+
+```yaml
+name: 시나리오 이름
+description: 설명
+target_url: http://localhost:3000
+steps:
+  - action: navigate|click|type|wait
+    selector: "CSS selector"    # click, type용
+    value: "입력값"              # type용
+    url: "URL"                   # navigate용
+    ms: 1000                     # wait용
+    anchor: "AnchorName"        # 이 step을 앵커로 지정 (선택)
+anchors:
+  - name: "AnchorName"
+    captures:
+      - offset_ms: 0
+        capture: [dom, screenshot]
+assertions:
+  - anchor: "AnchorName"
+    offset_ms: 0
+    type: selector_visible|selector_text|url_match
+    selector: "CSS selector"
+    expected: true|"text"|"url"
+```
+
+### Phase 2 완료 기준
+```bash
+mcp__scenario-editor__get_scenarios()
+mcp__scenario-editor__run_scenario({ id: "simple_navigation" })
+mcp__scenario-editor__get_scenario_result({ id: "simple_navigation" })
+```

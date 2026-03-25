@@ -1,0 +1,37 @@
+name: 로그인 플로우
+description: 이메일과 비밀번호를 입력하고 로그인 버튼을 클릭하는 기본 시나리오
+target_url: http://localhost:3000/login
+
+steps:
+  - action: navigate
+    url: http://localhost:3000/login
+
+  - action: type
+    selector: "input[name='email']"
+    value: "user@test.com"
+
+  - action: type
+    selector: "input[name='password']"
+    value: "Test1234!"
+
+  - action: click
+    selector: "button[type='submit']"
+    anchor: "LoginButton.click"
+
+  - action: wait
+    ms: 2000
+
+anchors:
+  - name: "LoginButton.click"
+    captures:
+      - offset_ms: 0
+        capture: [dom, screenshot]
+      - offset_ms: 500
+        capture: [dom, screenshot]
+
+assertions:
+  - anchor: "LoginButton.click"
+    offset_ms: 500
+    type: selector_visible
+    selector: ".loading-overlay"
+    expected: true

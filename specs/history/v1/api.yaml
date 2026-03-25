@@ -40,33 +40,3 @@ api:
       response:
         valid: boolean
         results: array
-  get_scenarios:
-    input: {}
-    expected:
-      status: 200
-      response:
-        scenarios: array
-  run_scenario:
-    input:
-      id: string
-    expected:
-      status: 200
-      response:
-        scenario_id: string
-        status: string
-        frames: array
-        assertions: array
-        summary:
-          total_assertions: number
-          passed: number
-          failed: number
-  get_scenario_result:
-    input:
-      id: string
-    expected:
-      status: 200
-      response:
-        scenario_id: string
-        status: string
-        frames: array
-        assertions: array
