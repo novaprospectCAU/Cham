@@ -64,7 +64,7 @@ export function App() {
         display: "flex", alignItems: "center", gap: 12,
       }}>
         <h1 style={{ fontSize: 16, fontWeight: 700, margin: 0 }}>Scenario Editor</h1>
-        <span style={{ fontSize: 11, color: "#666" }}>v0.3.0</span>
+        <span style={{ fontSize: 11, color: "#666" }}>v0.4.0</span>
       </div>
 
       {/* Main */}
@@ -130,11 +130,9 @@ export function App() {
 
               <AssertionList assertions={result.assertions || []} />
 
-              <Inspector
-                domTree={
-                  result.frames?.[0]?.dom_tree || []
-                }
-              />
+              {result.frames?.[0]?.dom_tree && (
+                <Inspector domTree={result.frames[0].dom_tree} />
+              )}
             </>
           )}
         </div>
