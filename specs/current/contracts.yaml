@@ -14,3 +14,12 @@ contracts:
       frame_captures: array
     expects:
       root_dir: string
+  diff_engine → mcp_server:
+    provides:
+      diff_log: object
+      coverage_report: object
+      baseline_management: object
+    expects:
+      root_dir: string
+      scenario_results: object
+      tolerances: object

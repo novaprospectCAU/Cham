@@ -574,64 +574,47 @@ pnpm --filter mcp-server dev
 
 ---
 
-## 현재 작업 지시 (Phase 2 시작)
+## 현재 작업 지시 (Phase 3 시작)
 
 > Phase 1 완료: spec-store + mcp-server 뼈대 (5개 MCP 툴)
+> Phase 2 완료: scenario-engine + 3개 MCP 툴 (총 8개)
 
-다음 순서로 Phase 2를 구현한다:
+다음 순서로 Phase 3을 구현한다:
 
 ### 결정사항
-- **앱 실행 방식:** 로컬 URL 기반 (대상 앱이 이미 실행 중이라고 가정, Docker 격리는 이후)
-- **시나리오 범위:** click, type, navigate, wait + screenshot/DOM 캡처 (스크롤/가상화/성능 메트릭은 이후)
+- **비교 레이어:** Phase 2 캡처 데이터(DOM tree + rect + screenshot)에 맞춰 4개 레이어 구현
+  - Visual (pixelmatch 픽셀 비교)
+  - Layout (rect 위치/크기 비교)
+  - NodeTree (DOM 트리 구조 비교)
+  - Assertions (assertion 회귀 감지)
+- Style/Event 레이어는 캡처 확장 후 추가
+
+### Baseline 개념
+- `results/baselines/{scenario_id}/` — "정답" 결과
+- `set_baseline(id)` → 현재 latest 결과를 baseline으로 복사
+- `diffScenario(id)` → baseline vs latest 비교
+- baseline 없으면 비교 불가 → 구조화된 에러 반환
 
 ### 구현 순서
 
 1. `specs/current/` 업데이트 (Spec First)
-   - `api.yaml`에 `get_scenarios`, `run_scenario`, `get_scenario_result` 추가
-   - `contracts.yaml`에 `scenario_engine → mcp_server` 계약 추가
-2. `packages/scenario-engine/` 구현
-   - `types.ts` — ScenarioDefinition, FrameCapture, ScenarioResult 등 인터페이스
-   - `schemas.ts` — 시나리오 YAML zod 검증
-   - `capture.ts` — DOM 직렬화 (page.evaluate) + 스크린샷 캡처
-   - `anchor.ts` — 이벤트 앵커 기반 캡처 스케줄링
-   - `runner.ts` — ScenarioEngine 클래스 (Playwright 실행)
+2. `packages/diff-engine/` 구현
+   - `types.ts` — Mismatch, DiffLog, CoverageReport
+   - `visual.ts` — pixelmatch 픽셀 비교
+   - `layout.ts` — rect 위치/크기 비교 (tolerances 적용)
+   - `nodetree.ts` — DOM 트리 구조 diff
+   - `assertions.ts` — assertion 회귀 감지
+   - `reporter.ts` — 불일치 로그 JSON + ai_action 생성
+   - `engine.ts` — DiffEngine 클래스
 3. `packages/mcp-server/` 업데이트
-   - `tools/scenarios.ts` — 3개 MCP 툴 등록
-   - `index.ts` — ScenarioEngine 인스턴스 생성 + 툴 등록
-4. `scenarios/` 샘플 시나리오 작성
-   - `simple_navigation.scenario.yaml` — example.com smoke test
-   - `login_flow.scenario.yaml` — 로그인 시나리오 템플릿
-5. 빌드 + MCP 통합 테스트
+   - `tools/diff.ts` — 4개 MCP 툴 (set_baseline, get_diff_log, get_latest_diff_log, get_coverage)
+   - `index.ts` — DiffEngine 인스턴스 + 툴 등록
+4. 빌드 + 테스트
 
-### 시나리오 YAML 형식
-
-```yaml
-name: 시나리오 이름
-description: 설명
-target_url: http://localhost:3000
-steps:
-  - action: navigate|click|type|wait
-    selector: "CSS selector"    # click, type용
-    value: "입력값"              # type용
-    url: "URL"                   # navigate용
-    ms: 1000                     # wait용
-    anchor: "AnchorName"        # 이 step을 앵커로 지정 (선택)
-anchors:
-  - name: "AnchorName"
-    captures:
-      - offset_ms: 0
-        capture: [dom, screenshot]
-assertions:
-  - anchor: "AnchorName"
-    offset_ms: 0
-    type: selector_visible|selector_text|url_match
-    selector: "CSS selector"
-    expected: true|"text"|"url"
-```
-
-### Phase 2 완료 기준
+### Phase 3 완료 기준
 ```bash
-mcp__scenario-editor__get_scenarios()
+mcp__scenario-editor__set_baseline({ scenario_id: "simple_navigation" })
 mcp__scenario-editor__run_scenario({ id: "simple_navigation" })
-mcp__scenario-editor__get_scenario_result({ id: "simple_navigation" })
+mcp__scenario-editor__get_diff_log({ scenario_id: "simple_navigation" })
+mcp__scenario-editor__get_coverage()
 ```

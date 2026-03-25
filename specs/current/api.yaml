@@ -70,3 +70,40 @@ api:
         status: string
         frames: array
         assertions: array
+  set_baseline:
+    input:
+      scenario_id: string
+    expected:
+      status: 200
+      response:
+        success: boolean
+        scenario_id: string
+  get_diff_log:
+    input:
+      scenario_id: string
+      severity: string
+    expected:
+      status: 200
+      response:
+        scenario_id: string
+        overall: string
+        summary: object
+        mismatches: array
+        ai_action: string
+  get_latest_diff_log:
+    input: {}
+    expected:
+      status: 200
+      response:
+        scenario_id: string
+        overall: string
+        mismatches: array
+  get_coverage:
+    input: {}
+    expected:
+      status: 200
+      response:
+        total_scenarios: number
+        passed: number
+        failed: number
+        not_run: number
