@@ -5,17 +5,22 @@ export function useKeyboard() {
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
       const store = useEditorStore.getState();
+      const tag = (e.target as HTMLElement).tagName;
 
-      // Don't handle if focus is on an input
-      if ((e.target as HTMLElement).tagName === "INPUT") return;
+      // Don't handle if focus is on an input/textarea
+      if (tag === "INPUT" || tag === "TEXTAREA") return;
+
+      const ctrl = e.ctrlKey || e.metaKey;
 
       switch (e.key) {
-        case " ": // Space = toggle playback
+        // Playback
+        case " ":
           e.preventDefault();
           store.setIsPlaying(!store.isPlaying);
           break;
 
-        case "ArrowRight": // Next frame
+        // Frame navigation
+        case "ArrowRight":
           e.preventDefault();
           if (store.result?.frames) {
             const maxIdx = store.result.frames.length - 1;
@@ -23,21 +28,63 @@ export function useKeyboard() {
           }
           break;
 
-        case "ArrowLeft": // Previous frame
+        case "ArrowLeft":
           e.preventDefault();
           store.setSelectedFrame(Math.max(store.selectedFrameIdx - 1, 0));
           break;
 
-        case "1": // Tab: Diff Log
-          store.setActivePanel("difflog");
+        case "Home":
+          e.preventDefault();
+          store.setSelectedFrame(0);
           break;
 
-        case "2": // Tab: Inspector
-          store.setActivePanel("inspector");
+        case "End":
+          e.preventDefault();
+          if (store.result?.frames) {
+            store.setSelectedFrame(store.result.frames.length - 1);
+          }
           break;
 
-        case "3": // Tab: Assertions
-          store.setActivePanel("assertions");
+        // Panel tabs
+        case "1":
+          if (!ctrl) store.setActivePanel("difflog");
+          break;
+
+        case "2":
+          if (!ctrl) store.setActivePanel("inspector");
+          break;
+
+        case "3":
+          if (!ctrl) store.setActivePanel("assertions");
+          break;
+
+        // Scenario navigation
+        case "ArrowUp":
+          if (ctrl) {
+            e.preventDefault();
+            navigateScenario(-1);
+          }
+          break;
+
+        case "ArrowDown":
+          if (ctrl) {
+            e.preventDefault();
+            navigateScenario(1);
+          }
+          break;
+
+        // Confirm (Ctrl+Enter)
+        case "Enter":
+          if (ctrl && store.selectedId && store.result) {
+            e.preventDefault();
+            store.confirmScenario();
+          }
+          break;
+
+        // Escape = clear selection / stop playback
+        case "Escape":
+          store.setIsPlaying(false);
+          store.setHoveredNodeRect(null);
           break;
       }
     };
@@ -45,4 +92,14 @@ export function useKeyboard() {
     window.addEventListener("keydown", handleKeyDown);
     return () => window.removeEventListener("keydown", handleKeyDown);
   }, []);
+}
+
+function navigateScenario(direction: number) {
+  const store = useEditorStore.getState();
+  const { scenarios, selectedId } = store;
+  if (scenarios.length === 0) return;
+
+  const currentIdx = scenarios.findIndex((s) => s.id === selectedId);
+  const nextIdx = Math.max(0, Math.min(scenarios.length - 1, currentIdx + direction));
+  store.selectScenario(scenarios[nextIdx].id);
 }

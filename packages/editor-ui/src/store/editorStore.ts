@@ -34,6 +34,7 @@ export interface EditorStore {
   selectedFrameIdx: number;
   overlayOpacity: number;
   isPlaying: boolean;
+  hoveredNodeRect: { x: number; y: number; width: number; height: number } | null;
 
   // Actions
   loadScenarios: () => Promise<void>;
@@ -46,6 +47,7 @@ export interface EditorStore {
   setOverlayOpacity: (v: number) => void;
   setPanelWidth: (panel: "left" | "right", w: number) => void;
   setIsPlaying: (v: boolean) => void;
+  setHoveredNodeRect: (rect: { x: number; y: number; width: number; height: number } | null) => void;
 }
 
 export const useEditorStore = create<EditorStore>((set, get) => ({
@@ -62,6 +64,7 @@ export const useEditorStore = create<EditorStore>((set, get) => ({
   selectedFrameIdx: 0,
   overlayOpacity: 0.5,
   isPlaying: false,
+  hoveredNodeRect: null,
 
   loadScenarios: async () => {
     const data = await api.fetchScenarios();
@@ -100,4 +103,5 @@ export const useEditorStore = create<EditorStore>((set, get) => ({
   setPanelWidth: (panel, w) =>
     set((s) => ({ panelWidths: { ...s.panelWidths, [panel]: w } })),
   setIsPlaying: (v) => set({ isPlaying: v }),
+  setHoveredNodeRect: (rect) => set({ hoveredNodeRect: rect }),
 }));
