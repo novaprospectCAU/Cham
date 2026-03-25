@@ -1,124 +1,75 @@
-interface Mismatch {
-  id: string;
-  frame_anchor: string;
-  frame_offset_ms: number;
-  layer: string;
-  component?: string;
-  path?: string;
-  expected: unknown;
-  actual: unknown;
-  severity: "high" | "medium" | "low";
-  screenshot_diff?: string;
-}
+import { colors } from "../theme/index.js";
+import { useEditorStore } from "../store/editorStore.js";
 
-interface DiffLog {
-  overall: string;
-  summary: { high: number; medium: number; low: number };
-  mismatches: Mismatch[];
-  ai_action: string;
-}
+const SEVERITY_LABELS: Record<string, string> = { high: "HIGH", medium: "MED", low: "LOW" };
 
-const SEVERITY_COLORS: Record<string, string> = {
-  high: "#ef4444",
-  medium: "#f59e0b",
-  low: "#6b7280",
-};
+export function DiffLogViewer() {
+  const { diff } = useEditorStore();
 
-const SEVERITY_LABELS: Record<string, string> = {
-  high: "HIGH",
-  medium: "MED",
-  low: "LOW",
-};
-
-export function DiffLogViewer({ diff }: { diff: DiffLog | null }) {
-  if (!diff) {
+  if (!diff || diff.error) {
     return (
-      <div style={{ padding: 16, color: "#888" }}>
+      <div style={{ padding: 16, color: colors.text.muted, fontSize: 12 }}>
         Diff 로그 없음. baseline을 설정하고 시나리오를 재실행하세요.
       </div>
     );
   }
 
   return (
-    <div style={{ padding: 16 }}>
-      <h3 style={{ fontSize: 14, fontWeight: 600, marginBottom: 8, color: "#aaa" }}>
-        DIFF LOG
-      </h3>
-
-      <div style={{
-        display: "flex", gap: 12, marginBottom: 12, fontSize: 12,
-      }}>
+    <div style={{ padding: 12 }}>
+      {/* Summary */}
+      <div style={{ display: "flex", gap: 8, marginBottom: 12, alignItems: "center" }}>
         <span style={{
-          padding: "2px 8px", borderRadius: 4,
-          backgroundColor: diff.overall === "pass" ? "#166534" : "#7f1d1d",
-          color: "#fff",
+          padding: "2px 8px", borderRadius: 3, fontSize: 10, fontWeight: 700,
+          backgroundColor: diff.overall === "pass" ? colors.accent.green + "20" : colors.accent.red + "20",
+          color: diff.overall === "pass" ? colors.accent.green : colors.accent.red,
         }}>
           {diff.overall.toUpperCase()}
         </span>
-        {diff.summary.high > 0 && (
-          <span style={{ color: SEVERITY_COLORS.high }}>
-            {diff.summary.high} high
-          </span>
-        )}
-        {diff.summary.medium > 0 && (
-          <span style={{ color: SEVERITY_COLORS.medium }}>
-            {diff.summary.medium} medium
-          </span>
-        )}
-        {diff.summary.low > 0 && (
-          <span style={{ color: SEVERITY_COLORS.low }}>
-            {diff.summary.low} low
-          </span>
-        )}
+        {diff.summary.high > 0 && <span style={{ fontSize: 10, color: colors.severity.high }}>{diff.summary.high} high</span>}
+        {diff.summary.medium > 0 && <span style={{ fontSize: 10, color: colors.severity.medium }}>{diff.summary.medium} med</span>}
+        {diff.summary.low > 0 && <span style={{ fontSize: 10, color: colors.severity.low }}>{diff.summary.low} low</span>}
       </div>
 
+      {/* Mismatches */}
       {diff.mismatches.length === 0 ? (
-        <div style={{ color: "#22c55e", fontSize: 13 }}>
-          불일치 없음. 모든 검증 통과.
-        </div>
+        <div style={{ color: colors.accent.green, fontSize: 11 }}>All checks passed</div>
       ) : (
-        <div style={{ display: "flex", flexDirection: "column", gap: 6 }}>
-          {diff.mismatches.map((m) => (
+        <div style={{ display: "flex", flexDirection: "column", gap: 4 }}>
+          {diff.mismatches.map((m: any) => (
             <div
               key={m.id}
               style={{
-                padding: "8px 12px",
-                borderRadius: 6,
-                backgroundColor: "#1a1a2a",
-                borderLeft: `3px solid ${SEVERITY_COLORS[m.severity]}`,
-                fontSize: 12,
+                padding: "6px 10px", borderRadius: 4,
+                backgroundColor: colors.bg.tertiary,
+                borderLeft: `3px solid ${(colors.severity as Record<string, string>)[m.severity] || colors.text.muted}`,
+                fontSize: 11,
               }}
             >
-              <div style={{ display: "flex", gap: 8, alignItems: "center" }}>
-                <span style={{
-                  color: SEVERITY_COLORS[m.severity],
-                  fontWeight: 600,
-                  minWidth: 36,
-                }}>
+              <div style={{ display: "flex", gap: 6, alignItems: "center" }}>
+                <span style={{ color: (colors.severity as Record<string, string>)[m.severity], fontWeight: 700, fontSize: 9, minWidth: 30 }}>
                   {SEVERITY_LABELS[m.severity]}
                 </span>
-                <span style={{ color: "#aaa" }}>{m.layer}</span>
-                <span style={{ color: "#ddd" }}>{m.component || ""}</span>
+                <span style={{ color: colors.text.muted }}>{m.layer}</span>
+                {m.component && <span style={{ color: colors.text.secondary }}>{m.component}</span>}
               </div>
-              {m.path && (
-                <div style={{ color: "#666", fontSize: 11, marginTop: 2 }}>
-                  {m.path}
-                </div>
-              )}
+              {m.path && <div style={{ color: colors.text.muted, fontSize: 10, marginTop: 2 }}>{m.path}</div>}
             </div>
           ))}
         </div>
       )}
 
+      {/* AI Action */}
       {diff.ai_action && (
         <div style={{
-          marginTop: 16, padding: 12, borderRadius: 6,
-          backgroundColor: "#1a1a2a", border: "1px solid #333",
+          marginTop: 12, padding: 10, borderRadius: 4,
+          backgroundColor: colors.bg.tertiary, border: `1px solid ${colors.border.light}`,
         }}>
-          <div style={{ fontSize: 11, color: "#888", marginBottom: 4 }}>AI ACTION</div>
+          <div style={{ fontSize: 9, color: colors.text.muted, fontWeight: 600, marginBottom: 4, textTransform: "uppercase", letterSpacing: 0.5 }}>
+            AI Action
+          </div>
           <pre style={{
-            fontSize: 12, color: "#ddd", whiteSpace: "pre-wrap", margin: 0,
-            fontFamily: "inherit",
+            fontSize: 11, color: colors.text.secondary, whiteSpace: "pre-wrap",
+            margin: 0, fontFamily: "inherit", lineHeight: 1.5,
           }}>
             {diff.ai_action}
           </pre>
