@@ -2,6 +2,9 @@ import { useState, useEffect, useCallback } from "react";
 import { ScenarioList } from "./components/ScenarioList.js";
 import { DiffLogViewer } from "./components/DiffLogViewer.js";
 import { ScreenshotCompare } from "./components/ScreenshotCompare.js";
+import { OverlayPlayer } from "./components/OverlayPlayer.js";
+import { Timeline } from "./components/Timeline.js";
+import { Inspector } from "./components/Inspector.js";
 import { AssertionList } from "./components/AssertionList.js";
 import { CoverageBar } from "./components/CoverageBar.js";
 import { ConfirmPanel } from "./components/ConfirmPanel.js";
@@ -103,6 +106,11 @@ export function App() {
                 </span>
               </div>
 
+              <Timeline
+                frames={result.frames || []}
+                assertions={result.assertions || []}
+              />
+
               <ScreenshotCompare
                 scenarioId={selectedId}
                 latestFrames={result.frames || []}
@@ -110,9 +118,23 @@ export function App() {
                 hasDiff={!!diff && !diff.error}
               />
 
+              {baseline?.frames && baseline.frames.length > 0 && (
+                <OverlayPlayer
+                  scenarioId={selectedId}
+                  latestFrames={result.frames || []}
+                  baselineFrames={baseline.frames}
+                />
+              )}
+
               <DiffLogViewer diff={diff?.error ? null : diff} />
 
               <AssertionList assertions={result.assertions || []} />
+
+              <Inspector
+                domTree={
+                  result.frames?.[0]?.dom_tree || []
+                }
+              />
             </>
           )}
         </div>
