@@ -6,7 +6,7 @@ import { Toolbar } from "./layout/Toolbar.js";
 import { StatusBar } from "./layout/StatusBar.js";
 import { PanelLayout } from "./layout/PanelLayout.js";
 import { ScenarioList } from "./components/ScenarioList.js";
-import { Timeline } from "./components/Timeline.js";
+import { CanvasTimeline } from "./components/CanvasTimeline.js";
 import { Viewport } from "./components/Viewport.js";
 import { TabPanel } from "./components/TabPanel.js";
 import { DiffLogViewer } from "./components/DiffLogViewer.js";
@@ -39,7 +39,7 @@ export function App() {
         left={<ScenarioList />}
         center={
           <>
-            <Timeline />
+            <CanvasTimeline />
             <Viewport />
           </>
         }
