@@ -1,0 +1,11 @@
+pages:
+  spec_viewer:
+    components: [SpecFileList, SpecContent, ValidationBadge]
+    flows:
+      - trigger: SpecFileList.select
+        conditions:
+          - file_exists: true
+        action: show SpecContent
+    assertions:
+      - condition: "SpecContent.visible == true when file selected"
+      - condition: "ValidationBadge.status == 'valid' when schema passes"

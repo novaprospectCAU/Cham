@@ -1,0 +1,9 @@
+contracts:
+  spec_store → mcp_server:
+    provides:
+      current_spec: object
+      spec_diff: object
+      validation_results: array
+      versions: array
+    expects:
+      root_dir: string

@@ -1,0 +1,42 @@
+api:
+  get_current_spec:
+    input: {}
+    expected:
+      status: 200
+      response:
+        specs: object
+        validation:
+          valid: boolean
+          errors: array
+  get_spec_diff:
+    input:
+      from_version: string
+      to_version: string
+    expected:
+      status: 200
+      response:
+        from: string
+        to: string
+        changes: array
+        affected_files: array
+        ai_instructions: string
+  save_spec_version:
+    input:
+      version: string
+    expected:
+      status: 200
+      response:
+        success: boolean
+  list_spec_versions:
+    input: {}
+    expected:
+      status: 200
+      response:
+        versions: array
+  validate_specs:
+    input: {}
+    expected:
+      status: 200
+      response:
+        valid: boolean
+        results: array

@@ -1,0 +1,5 @@
+tolerances:
+  layout_px: 2
+  timing_ms: 50
+  color_delta: 5
+  fps_min: 55
