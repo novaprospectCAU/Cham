@@ -17,7 +17,7 @@ AI가 코드를 작성하고 스스로 검증하는 루프를 완성하기 위�
                                  ↓
                Playwright → 앱 실행 + 캡처
                                  ↓
-               diff-engine → 불일치 로그 JSON
+               diff-engine → 불일치 로그 (7레이어)
                                  ↓
                Claude CLI → 로그 수신 → 코드 수정
                                  ↓
@@ -31,16 +31,17 @@ AI가 코드를 작성하고 스스로 검증하는 루프를 완성하기 위�
 | 패키지 | 역할 |
 |---|---|
 | `packages/spec-store` | YAML 설계서 버전 관리 + diff 추출 |
-| `packages/scenario-engine` | Playwright 기반 시나리오 실행 + DOM/스크린샷 캡처 |
-| `packages/diff-engine` | baseline vs 최신 결과 4레이어 비교 (visual, layout, nodetree, assertion) |
+| `packages/scenario-engine` | Playwright 기반 시나리오 실행 + DOM/스크린샷/스타일/이벤트/성능 캡처 + Docker 격리 |
+| `packages/diff-engine` | 7레이어 비교 (visual, layout, nodetree, style, event, assertion, spec) |
 | `packages/mcp-server` | Claude CLI 접속점 (12개 MCP 툴) |
-| `packages/editor-ui` | 웹 기반 결과 뷰어 + 컨펌/거절 UI |
+| `packages/editor-ui` | Figma-style 웹 에디터 (Zustand + Canvas 타임라인 + 3-column 패널) |
 
 ## 요구사항
 
 - Node.js >= 20
 - pnpm >= 8
 - Playwright Chromium (자동 설치)
+- Docker (선택 — 격리 환경 사용 시)
 
 ## 설치
 
@@ -65,6 +66,7 @@ my-project/
 │   └── current/
 │       ├── pages.yaml
 │       ├── api.yaml
+│       ├── performance.yaml
 │       └── tolerances.yaml
 ├── scenarios/
 │   └── *.scenario.yaml
@@ -126,10 +128,6 @@ steps:
     selector: "input[name='email']"
     value: "test@example.com"
 
-  - action: type
-    selector: "input[name='password']"
-    value: "password123"
-
   - action: click
     selector: "button[type='submit']"
     anchor: "LoginClick"
@@ -156,60 +154,77 @@ assertions:
     type: selector_visible
     selector: "input[name='email']"
     expected: true
-
-  - anchor: "LoginClick"
-    offset_ms: 500
-    type: url_match
-    expected: "http://localhost:3000/dashboard"
 ```
 
 #### 시나리오 YAML 형식
 
 | 필드 | 설명 |
 |---|---|
-| `steps[].action` | `navigate`, `click`, `type`, `wait` |
+| `steps[].action` | `navigate`, `click`, `type`, `wait`, `scroll` |
 | `steps[].selector` | CSS 셀렉터 (click, type용) |
 | `steps[].anchor` | 이 step을 캡처 앵커로 지정 |
+| `steps[].scroll_y` | 스크롤 Y 픽셀 (scroll용) |
 | `anchors[].captures` | 앵커 시점 기준 offset별 캡처 (dom, screenshot) |
 | `assertions[].type` | `selector_visible`, `selector_text`, `url_match` |
+| `docker` | Docker 격리 설정 (선택) — `image`, `port`, `health_check` |
+
+#### Docker 격리 (선택)
+
+```yaml
+# 대상 앱을 Docker로 실행
+docker:
+  image: "my-app:latest"
+  port: 3000
+  health_check: "/health"
+  health_timeout: 30000
+```
 
 ### 5. Claude CLI에서 사용
 
 ```bash
-# 대상 앱 실행 (별도 터미널)
+# 대상 앱 실행 (별도 터미널, Docker 미사용 시)
 cd my-project && npm run dev
 
 # Claude CLI 새 세션에서
 cd my-project
 
-# 시나리오 목록 확인
-mcp__scenario-editor__get_scenarios()
-
-# 시나리오 실행
+# 시나리오 실행 → baseline 설정 → 수정 후 재실행 → diff 확인
 mcp__scenario-editor__run_scenario({ id: "login_flow" })
-
-# baseline 설정 (현재 결과를 "정답"으로 저장)
 mcp__scenario-editor__set_baseline({ scenario_id: "login_flow" })
-
-# 코드 수정 후 재실행 → 불일치 확인
 mcp__scenario-editor__run_scenario({ id: "login_flow" })
 mcp__scenario-editor__get_diff_log({ scenario_id: "login_flow" })
-
-# 커버리지 확인
 mcp__scenario-editor__get_coverage()
 ```
 
 ### 6. 웹 UI에서 결과 확인
 
 ```bash
-# scenario-editor의 editor-ui 서버 시작
 cd ~/scenario-editor/packages/editor-ui
 SCENARIO_EDITOR_ROOT=/path/to/my-project pnpm dev
-
 # 브라우저에서 http://localhost:5173 접속
 ```
 
-웹 UI에서 스크린샷 비교, diff 로그, assertion 결과를 확인하고 Confirm/Reject할 수 있습니다.
+#### Editor UI 기능
+
+- **3-column 레이아웃**: 시나리오 목록 / 뷰포트+타임라인 / 탭 패널
+- **Canvas 타임라인**: 캡처 트랙 + assertion 트랙 + playhead + 클릭-to-seek
+- **Viewport**: Actual/Baseline/Diff/Overlay 4모드 + 줌/팬 + 자동 재생
+- **Overlay**: baseline difference blend + 투명도 슬라이더
+- **Inspector**: DOM 트리 + 노드 호버→스크린샷 rect 하이라이트 + computed styles
+- **Diff Log**: severity 색상 + AI Action 지시서
+- **StatusBar**: 커버리지 바 + Confirm/Reject
+
+#### 키보드 단축키
+
+| 키 | 동작 |
+|---|---|
+| Space | 재생/정지 |
+| ← / → | 이전/다음 프레임 |
+| Home / End | 첫/마지막 프레임 |
+| 1 / 2 / 3 | Diff Log / Inspector / Assertions 탭 |
+| Ctrl+↑/↓ | 시나리오 목록 탐색 |
+| Ctrl+Enter | 컨펌 |
+| Escape | 재생 정지 |
 
 ---
 
@@ -228,16 +243,44 @@ SCENARIO_EDITOR_ROOT=/path/to/my-project pnpm dev
 | 툴 | 설명 |
 |---|---|
 | `get_scenarios()` | 시나리오 목록 + 최근 실행 상태 |
-| `run_scenario(id)` | 시나리오 실행 (Playwright) |
+| `run_scenario(id)` | 시나리오 실행 (Playwright, Docker 옵션) |
 | `get_scenario_result(id)` | 최신 실행 결과 조회 |
 
 ### 불일치 탐지
 | 툴 | 설명 |
 |---|---|
 | `set_baseline(scenario_id)` | 현재 결과를 baseline으로 설정 |
-| `get_diff_log(scenario_id, severity?)` | baseline 대비 불일치 로그 |
+| `get_diff_log(scenario_id, severity?)` | 7레이어 비교 + 불일치 로그 |
 | `get_latest_diff_log(scenario_id?)` | 최신 diff 로그 조회 |
 | `get_coverage()` | 전체 커버리지 리포트 |
+
+---
+
+## Diff Engine 비교 레이어 (7개)
+
+| 레이어 | 비교 대상 | 허용 오차 |
+|---|---|---|
+| Visual | pixelmatch 픽셀 비교 | >5% high, >1% medium |
+| Layout | DOM rect x/y/width/height | tolerances.layout_px |
+| NodeTree | DOM 트리 구조 (추가/제거/변경) | — |
+| Style | computed style (color, font 등) | tolerances.color_delta |
+| Event | 이벤트 시퀀스 + 타이밍 | tolerances.timing_ms |
+| Assertion | baseline 대비 assertion 회귀 | — |
+| Spec | specs/current/pages.yaml 자동 검증 | — |
+
+---
+
+## 캡처 항목
+
+시나리오 실행 시 각 앵커 시점에서 수집하는 데이터:
+
+| 항목 | 설명 |
+|---|---|
+| `screenshot` | viewport PNG 이미지 |
+| `dom_tree` | DOM 구조 (tag, id, classes, rect, textContent, attributes) |
+| `computed_styles` | 주요 요소의 CSS computed style (13개 속성) |
+| `event_log` | 브라우저 이벤트 (click, input, change, submit, focus, blur) |
+| `performance` | memory_mb, render_time_ms |
 
 ---
 
@@ -269,7 +312,7 @@ scenario-editor 자체를 수정한 경우:
 ./scripts/self-verify.sh
 ```
 
-편집기 UI를 Playwright로 테스트하여 회귀를 감지합니다.
+2-pass 검증: 실행 → baseline 설정 → 재실행 → diff 0 확인
 
 ## 라이선스
 

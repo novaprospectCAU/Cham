@@ -574,42 +574,64 @@ pnpm --filter mcp-server dev
 
 ---
 
-## 완료 상태 (Phase 1-5 전체 완료)
+## 완료 상태 (전체 구현 완료)
 
-> Phase 1: spec-store + mcp-server 뼈대 (5개 MCP 툴)
-> Phase 2: scenario-engine + 3개 MCP 툴 (총 8개)
-> Phase 3: diff-engine + 4개 MCP 툴 (총 12개)
-> Phase 4: editor-ui 웹 뷰어 (React + Vite + Express)
-> Phase 5: 자기 검증 루프
+### 백엔드 (Phase 1-3, 6-7, 9)
+| Phase | 내용 | 상태 |
+|---|---|---|
+| 1 | spec-store + mcp-server 뼈대 (5개 MCP 툴) | Done |
+| 2 | scenario-engine — Playwright 실행 + DOM/스크린샷 캡처 | Done |
+| 3 | diff-engine — 4레이어 불일치 탐지 + baseline 비교 | Done |
+| 5 | 자기 검증 루프 — 편집기가 자기 자신을 Playwright로 테스트 | Done |
+| 6 | 캡처 확장 — computed style, event log, performance 메트릭, scroll 액션 | Done |
+| 7 | diff-engine 6레이어 완성 — style, event 레이어 + 성능 위반 감지 | Done |
+| 9 | Docker 격리 + 설계서 기반 비교 (specs/current/ assertion 자동 검증) | Done |
+
+### 프론트엔드 (Phase 4, 8, A-E)
+| Phase | 내용 | 상태 |
+|---|---|---|
+| 4 | editor-ui MVP — React + Vite + Express API | Done |
+| 8 | UI 고도화 v1 — OverlayPlayer, Inspector, Timeline 컴포넌트 | Done |
+| A | 아키텍처 리빌드 — Zustand 스토어 + 테마 시스템 + 3-column 패널 레이아웃 | Done |
+| B | Canvas 타임라인 — Canvas2D 렌더링, 눈금자, playhead, hitTest | Done |
+| C | Viewport 고도화 — 자동 재생, Overlay difference blend, 줌/팬, 타임코드 | Done |
+| D | Inspector 고도화 — DOM 노드 호버→rect 하이라이트, 상세 속성 패널 | Done |
+| E | 키보드 단축키 12개 (Space, 화살표, Home/End, 1/2/3, Ctrl+Enter 등) | Done |
+
+### MCP 툴 (12개)
+| 카테고리 | 툴 |
+|---|---|
+| 설계서 (5) | `get_current_spec`, `get_spec_diff`, `save_spec_version`, `list_spec_versions`, `validate_specs` |
+| 시나리오 (3) | `get_scenarios`, `run_scenario`, `get_scenario_result` |
+| 불일치 (4) | `set_baseline`, `get_diff_log`, `get_latest_diff_log`, `get_coverage` |
+
+### Diff Engine 비교 레이어 (7개)
+1. **Visual** — pixelmatch 픽셀 비교
+2. **Layout** — DOM rect 위치/크기 비교 (tolerances 적용)
+3. **NodeTree** — DOM 트리 구조 diff (추가/제거/변경)
+4. **Style** — computed style 비교 (color_delta 허용 오차)
+5. **Event** — 이벤트 시퀀스/타이밍 비교 (timing_ms 허용 오차)
+6. **Assertion** — assertion 회귀 감지 (baseline 대비)
+7. **Spec** — specs/current/pages.yaml 기반 컴포넌트/조건 자동 검증
 
 ---
 
 ## 자기 검증 워크플로우
 
-편집기 코드를 수정한 후 자기 검증을 실행하는 방법:
-
 ### 자동 (권장)
 ```bash
 ./scripts/self-verify.sh
 ```
+2-pass 검증: 실행 → baseline 설정 → 재실행 → diff 0 확인
 
 ### 수동 (Claude CLI)
 ```bash
-# 1. editor-ui 서버 시작
 pnpm --filter editor-ui dev
 
-# 2. 편집기 자체 시나리오 실행
 mcp__scenario-editor__run_scenario({ id: "editor_scenario_list" })
-mcp__scenario-editor__run_scenario({ id: "editor_diff_viewer" })
-mcp__scenario-editor__run_scenario({ id: "editor_confirm_flow" })
-
-# 3. diff 확인 (baseline이 있는 경우)
-mcp__scenario-editor__get_diff_log({ scenario_id: "editor_scenario_list" })
-
-# 4. 통과하면 baseline 업데이트
 mcp__scenario-editor__set_baseline({ scenario_id: "editor_scenario_list" })
-
-# 5. 커버리지 확인
+mcp__scenario-editor__run_scenario({ id: "editor_scenario_list" })
+mcp__scenario-editor__get_diff_log({ scenario_id: "editor_scenario_list" })
 mcp__scenario-editor__get_coverage()
 ```
 
@@ -619,3 +641,14 @@ mcp__scenario-editor__get_coverage()
 | `editor_scenario_list` | UI 로드, 시나리오 목록 렌더링, 선택 동작 |
 | `editor_diff_viewer` | 스크린샷/Diff Log/Assertions 표시 |
 | `editor_confirm_flow` | Confirm/Reject 버튼 표시 |
+
+### 키보드 단축키
+| 키 | 동작 |
+|---|---|
+| Space | 재생/정지 |
+| ← / → | 이전/다음 프레임 |
+| Home / End | 첫/마지막 프레임 |
+| 1 / 2 / 3 | Diff Log / Inspector / Assertions 탭 |
+| Ctrl+↑/↓ | 시나리오 목록 탐색 |
+| Ctrl+Enter | 컨펌 |
+| Escape | 재생 정지 |
