@@ -1,0 +1,77 @@
+name: 할일 필터 플로우
+description: 활성/완료 필터 전환 + 빈 상태 확인
+
+target_url: http://localhost:3000/tasks
+
+steps:
+  - action: navigate
+    url: http://localhost:3000/tasks
+    anchor: TaskListInitial
+
+  - action: wait
+    ms: 800
+
+  # 완료 필터 선택
+  - action: click
+    selector: "[data-testid='filter-completed']"
+    anchor: FilterCompleted
+
+  - action: wait
+    ms: 500
+
+  # 활성 필터 선택
+  - action: click
+    selector: "[data-testid='filter-active']"
+    anchor: FilterActive
+
+  - action: wait
+    ms: 500
+
+  # 전체 보기
+  - action: click
+    selector: "[data-testid='filter-all']"
+    anchor: FilterAll
+
+  - action: wait
+    ms: 500
+
+anchors:
+  - name: TaskListInitial
+    captures:
+      - offset_ms: 0
+        capture: [dom, screenshot]
+      - offset_ms: 800
+        capture: [dom, screenshot]
+
+  - name: FilterCompleted
+    captures:
+      - offset_ms: 300
+        capture: [dom, screenshot]
+
+  - name: FilterActive
+    captures:
+      - offset_ms: 300
+        capture: [dom, screenshot]
+
+  - name: FilterAll
+    captures:
+      - offset_ms: 300
+        capture: [dom, screenshot]
+
+assertions:
+  - anchor: TaskListInitial
+    offset_ms: 800
+    type: url_match
+    expected: "http://localhost:3000/tasks"
+
+  - anchor: FilterCompleted
+    offset_ms: 300
+    type: selector_visible
+    selector: "[data-testid='filter-completed'].active"
+    expected: true
+
+  - anchor: FilterActive
+    offset_ms: 300
+    type: selector_visible
+    selector: "[data-testid='filter-active'].active"
+    expected: true

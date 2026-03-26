@@ -1,0 +1,181 @@
+name: 할일 생성/완료/삭제 플로우
+description: 로그인 후 할일 생성 → 완료 처리 → 삭제
+
+target_url: http://localhost:3000/login
+
+steps:
+  # 로그인
+  - action: navigate
+    url: http://localhost:3000/login
+
+  - action: type
+    selector: "input[name='email']"
+    value: "test@example.com"
+
+  - action: type
+    selector: "input[name='password']"
+    value: "password123"
+
+  - action: click
+    selector: "button[type='submit']"
+
+  - action: wait
+    ms: 1500
+    anchor: AfterLogin
+
+  # 할일 목록으로 이동
+  - action: click
+    selector: "[data-testid='nav-tasks']"
+    anchor: TaskListLoad
+
+  - action: wait
+    ms: 800
+
+  # 할일 생성
+  - action: click
+    selector: "[data-testid='create-task-button']"
+    anchor: CreateTaskPageLoad
+
+  - action: wait
+    ms: 500
+
+  - action: type
+    selector: "input[name='title']"
+    value: "테스트 할일 제목"
+
+  - action: type
+    selector: "textarea[name='description']"
+    value: "테스트 설명입니다"
+
+  - action: click
+    selector: "button[type='submit']"
+    anchor: TaskSubmit
+
+  - action: wait
+    ms: 1000
+
+  # 생성된 할일 클릭
+  - action: click
+    selector: "[data-testid='task-item']:first-child"
+    anchor: TaskDetailLoad
+
+  - action: wait
+    ms: 800
+
+  # 완료 처리
+  - action: click
+    selector: "[data-testid='complete-button']"
+    anchor: TaskComplete
+
+  - action: wait
+    ms: 800
+
+  # 삭제
+  - action: click
+    selector: "[data-testid='delete-button']"
+    anchor: DeleteModalOpen
+
+  - action: wait
+    ms: 500
+
+  - action: click
+    selector: "[data-testid='delete-confirm']"
+    anchor: AfterDelete
+
+  - action: wait
+    ms: 1000
+
+anchors:
+  - name: AfterLogin
+    captures:
+      - offset_ms: 0
+        capture: [dom, screenshot]
+
+  - name: TaskListLoad
+    captures:
+      - offset_ms: 500
+        capture: [dom, screenshot]
+
+  - name: CreateTaskPageLoad
+    captures:
+      - offset_ms: 300
+        capture: [dom, screenshot]
+
+  - name: TaskSubmit
+    captures:
+      - offset_ms: 0
+        capture: [dom, screenshot]
+      - offset_ms: 1000
+        capture: [dom, screenshot]
+
+  - name: TaskDetailLoad
+    captures:
+      - offset_ms: 500
+        capture: [dom, screenshot]
+
+  - name: TaskComplete
+    captures:
+      - offset_ms: 0
+        capture: [dom, screenshot]
+      - offset_ms: 800
+        capture: [dom, screenshot]
+
+  - name: DeleteModalOpen
+    captures:
+      - offset_ms: 300
+        capture: [dom, screenshot]
+
+  - name: AfterDelete
+    captures:
+      - offset_ms: 800
+        capture: [dom, screenshot]
+
+assertions:
+  - anchor: AfterLogin
+    offset_ms: 0
+    type: url_match
+    expected: "http://localhost:3000/dashboard"
+
+  - anchor: TaskListLoad
+    offset_ms: 500
+    type: url_match
+    expected: "http://localhost:3000/tasks"
+
+  - anchor: CreateTaskPageLoad
+    offset_ms: 300
+    type: url_match
+    expected: "http://localhost:3000/tasks/new"
+
+  - anchor: TaskSubmit
+    offset_ms: 1000
+    type: url_match
+    expected: "http://localhost:3000/tasks"
+
+  - anchor: TaskSubmit
+    offset_ms: 1000
+    type: selector_visible
+    selector: "[data-testid='task-item']"
+    expected: true
+
+  - anchor: TaskComplete
+    offset_ms: 800
+    type: selector_text
+    selector: "[data-testid='status-badge']"
+    expected: "완료"
+
+  - anchor: TaskComplete
+    offset_ms: 800
+    type: selector_visible
+    selector: "[data-testid='complete-button'][disabled]"
+    expected: true
+
+  - anchor: DeleteModalOpen
+    offset_ms: 300
+    type: selector_visible
+    selector: "[data-testid='delete-confirm-modal']"
+    expected: true
+
+  - anchor: AfterDelete
+    offset_ms: 800
+    type: url_match
+    expected: "http://localhost:3000/tasks"

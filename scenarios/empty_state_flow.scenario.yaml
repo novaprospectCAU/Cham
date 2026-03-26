@@ -1,0 +1,67 @@
+name: 빈 상태 플로우
+description: 할일이 없을 때 EmptyState 노출 확인
+
+target_url: http://localhost:3000/tasks?_empty=true
+
+steps:
+  - action: navigate
+    url: http://localhost:3000/tasks?_empty=true
+    anchor: EmptyTaskList
+
+  - action: wait
+    ms: 800
+
+  # 빈 상태에서 할일 생성 버튼 클릭
+  - action: click
+    selector: "[data-testid='empty-create-button']"
+    anchor: NavigateToCreate
+
+  - action: wait
+    ms: 500
+
+  # 취소 후 돌아오기
+  - action: click
+    selector: "[data-testid='cancel-button']"
+    anchor: BackToEmptyList
+
+  - action: wait
+    ms: 500
+
+anchors:
+  - name: EmptyTaskList
+    captures:
+      - offset_ms: 800
+        capture: [dom, screenshot]
+
+  - name: NavigateToCreate
+    captures:
+      - offset_ms: 300
+        capture: [dom, screenshot]
+
+  - name: BackToEmptyList
+    captures:
+      - offset_ms: 300
+        capture: [dom, screenshot]
+
+assertions:
+  - anchor: EmptyTaskList
+    offset_ms: 800
+    type: selector_visible
+    selector: "[data-testid='empty-state']"
+    expected: true
+
+  - anchor: EmptyTaskList
+    offset_ms: 800
+    type: selector_visible
+    selector: "[data-testid='task-item']"
+    expected: false
+
+  - anchor: NavigateToCreate
+    offset_ms: 300
+    type: url_match
+    expected: "http://localhost:3000/tasks/new"
+
+  - anchor: BackToEmptyList
+    offset_ms: 300
+    type: url_match
+    expected: "http://localhost:3000/tasks"

@@ -1,110 +1,76 @@
 api:
-  get_current_spec:
-    input: {}
-    expected:
-      status: 200
-      response:
-        specs: object
-        validation:
-          valid: boolean
-          errors: array
-  get_spec_diff:
+  POST /api/auth/login:
+    description: 로그인
     input:
-      from_version: string
-      to_version: string
+      email: "test@example.com"
+      password: "password123"
     expected:
       status: 200
       response:
-        from: string
-        to: string
-        changes: array
-        affected_files: array
-        ai_instructions: string
-  save_spec_version:
+        token: "[jwt_format]"
+        user:
+          id: "[uuid]"
+          name: "테스트 유저"
+          email: "test@example.com"
+      response_time_ms: "< 300"
+
+  POST /api/auth/login (wrong credentials):
+    description: 잘못된 로그인
     input:
-      version: string
+      email: "test@example.com"
+      password: "wrongpassword"
+    expected:
+      status: 401
+      response:
+        error: "INVALID_CREDENTIALS"
+
+  GET /api/tasks:
+    description: 할일 목록 조회
+    headers:
+      Authorization: "Bearer [token]"
     expected:
       status: 200
       response:
-        success: boolean
-  list_spec_versions:
-    input: {}
+        tasks: "[array]"
+        total: "[number]"
+      response_time_ms: "< 200"
+
+  GET /api/tasks (empty):
+    description: 할일 없을 때
     expected:
       status: 200
       response:
-        versions: array
-  validate_specs:
-    input: {}
-    expected:
-      status: 200
-      response:
-        valid: boolean
-        results: array
-  get_scenarios:
-    input: {}
-    expected:
-      status: 200
-      response:
-        scenarios: array
-  run_scenario:
+        tasks: []
+        total: 0
+
+  POST /api/tasks:
+    description: 할일 생성
     input:
-      id: string
+      title: "새 할일"
+      description: "설명"
+      priority: "medium"
+    expected:
+      status: 201
+      response:
+        id: "[uuid]"
+        title: "새 할일"
+        status: "active"
+        priority: "medium"
+        created_at: "[datetime]"
+      response_time_ms: "< 300"
+
+  PATCH /api/tasks/:id/complete:
+    description: 할일 완료 처리
     expected:
       status: 200
       response:
-        scenario_id: string
-        status: string
-        frames: array
-        assertions: array
-        summary:
-          total_assertions: number
-          passed: number
-          failed: number
-  get_scenario_result:
-    input:
-      id: string
+        id: "[uuid]"
+        status: "completed"
+        completed_at: "[datetime]"
+
+  DELETE /api/tasks/:id:
+    description: 할일 삭제
     expected:
       status: 200
       response:
-        scenario_id: string
-        status: string
-        frames: array
-        assertions: array
-  set_baseline:
-    input:
-      scenario_id: string
-    expected:
-      status: 200
-      response:
-        success: boolean
-        scenario_id: string
-  get_diff_log:
-    input:
-      scenario_id: string
-      severity: string
-    expected:
-      status: 200
-      response:
-        scenario_id: string
-        overall: string
-        summary: object
-        mismatches: array
-        ai_action: string
-  get_latest_diff_log:
-    input:
-      scenario_id: string (optional)
-    expected:
-      status: 200
-      response:
-        scenario_id: string
-        overall: string
-        mismatches: array
-  get_coverage:
-    input: {}
-    expected:
-      status: 200
-      response:
-        total_scenarios: number
-        passed: number
-        failed: number
-        not_run: number
+        deleted: true

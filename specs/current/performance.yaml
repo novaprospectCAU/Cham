@@ -1,4 +1,0 @@
-performance:
-  min_fps: 60
-  max_memory_mb: 200
-  max_render_time_ms: 16

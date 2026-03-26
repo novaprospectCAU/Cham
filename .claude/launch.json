@@ -6,6 +6,12 @@
       "runtimeExecutable": "pnpm",
       "runtimeArgs": ["--filter", "editor-ui", "dev"],
       "port": 5173
+    },
+    {
+      "name": "todo-app",
+      "runtimeExecutable": "pnpm",
+      "runtimeArgs": ["--filter", "todo-app", "dev"],
+      "port": 3000
     }
   ]
 }
